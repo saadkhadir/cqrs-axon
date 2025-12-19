@@ -1,6 +1,5 @@
 package org.example.cqrsaxon.command.commands;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

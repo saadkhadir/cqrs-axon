@@ -1,4 +1,4 @@
 package org.example.cqrsaxon.command.commands;
 
-public class UpdateAccountCommand {
+public class UpdateAccountStatusCommand {
 }
