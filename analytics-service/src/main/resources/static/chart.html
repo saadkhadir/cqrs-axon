@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .control-group input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status.connected {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .status.disconnected {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .info-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .info-row:hover {
+            background: linear-gradient(135deg, #e0e7ff 0%, #cfd9f7 100%);
+            transform: translateX(5px);
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .chart-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+            padding: 18px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(238, 9, 121, 0.3);
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            color: #999;
+            font-size: 1.2em;
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Tableau de Bord Analytics</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <input type="text" id="accountIdInput" placeholder="Entrez l'ID du compte">
+            <button onclick="loadAccountById()">Charger Compte</button>
+            <button onclick="loadAllAccounts()">Tous les Comptes</button>
+            <button onclick="watchAccount()" id="watchBtn">Suivi en Direct</button>
+            <button onclick="stopWatching()" id="stopBtn" disabled>Arrêter</button>
+        </div>
+        <div id="statusIndicator"></div>
+    </div>
+
+    <div id="error"></div>
+    <div id="loading"></div>
+
+    <div id="chartSection" style="display: none;">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title" id="chartTitle">Analytics du Compte</div>
+                <div id="liveBadge"></div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="analyticsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="content"></div>
+</div>
+
+<script>
+    let eventSource = null;
+    let currentWatchingId = null;
+    let analyticsChart = null;
+    let chartData = {
+        labels: [],
+        balances: [],
+        credits: [],
+        debits: [],
+        transactions: []
+    };
+    const MAX_DATA_POINTS = 20;
+
+    function initChart() {
+        const ctx = document.getElementById('analyticsChart').getContext('2d');
+
+        if (analyticsChart) {
+            analyticsChart.destroy();
+        }
+
+        analyticsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Solde Total',
+                        data: chartData.balances,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Crédit Total',
+                        data: chartData.credits,
+                        borderColor: '#38ef7d',
+                        backgroundColor: 'rgba(56, 239, 125, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Débit Total',
+                        data: chartData.debits,
+                        borderColor: '#ff6a00',
+                        backgroundColor: 'rgba(255, 106, 0, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    },
+                    {
+                        label: 'Nb Transactions',
+                        data: chartData.transactions,
+                        borderColor: '#ffd700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Montant',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Nombre de Transactions',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.dataset.label === 'Nb Transactions') {
+                                        label += context.parsed.y;
+                                    } else {
+                                        label += context.parsed.y.toFixed(2);
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function addDataPoint(accountData) {
+        const timestamp = new Date().toLocaleTimeString();
+
+        chartData.labels.push(timestamp);
+        chartData.balances.push(accountData.balance || 0);
+        chartData.credits.push(accountData.totalCredit || 0);
+        chartData.debits.push(accountData.totalDebit || 0);
+        const totalTransactions = (accountData.totalNumberOfCredits || 0) + (accountData.totalNumberOfDebits || 0);
+        chartData.transactions.push(totalTransactions);
+
+        if (chartData.labels.length > MAX_DATA_POINTS) {
+            chartData.labels.shift();
+            chartData.balances.shift();
+            chartData.credits.shift();
+            chartData.debits.shift();
+            chartData.transactions.shift();
+        }
+
+        if (analyticsChart) {
+            analyticsChart.update();
+        }
+    }
+
+    function resetChartData() {
+        chartData = {
+            labels: [],
+            balances: [],
+            credits: [],
+            debits: [],
+            transactions: []
+        };
+    }
+
+    function showLoading(message = 'Chargement...') {
+        document.getElementById('loading').innerHTML = `<div class="loading">${message}</div>`;
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').innerHTML = '';
+    }
+
+    function showError(message) {
+        document.getElementById('error').innerHTML = `<div class="error"><strong>Erreur:</strong> ${message}</div>`;
+        setTimeout(() => {
+            document.getElementById('error').innerHTML = '';
+        }, 5000);
+    }
+
+    function renderAnalytics(analytics, isArray = true) {
+        const content = document.getElementById('content');
+
+        if (!analytics || (isArray && analytics.length === 0)) {
+            content.innerHTML = '<div class="empty-state">Aucune donnée disponible</div>';
+            return;
+        }
+
+        const data = isArray ? analytics : [analytics];
+
+        content.innerHTML = `
+                <div class="dashboard-grid">
+                    ${data.map(account => `
+                        <div class="card">
+                            <div class="card-title">${account.accountId || 'N/A'}</div>
+                            <div class="info-grid">
+                                <div class="info-row">
+                                    <span class="info-label">💰 Solde</span>
+                                    <span class="info-value">${account.balance?.toFixed(2) || '0.00'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">📈 Crédit Total</span>
+                                    <span class="info-value">${account.totalCredit?.toFixed(2) || '0.00'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">📉 Débit Total</span>
+                                    <span class="info-value">${account.totalDebit?.toFixed(2) || '0.00'}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">✅ Nb Crédits</span>
+                                    <span class="info-value">${account.totalNumberOfCredits || 0}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">❌ Nb Débits</span>
+                                    <span class="info-value">${account.totalNumberOfDebits || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+    }
+
+    async function loadAllAccounts() {
+        try {
+            stopWatching();
+            showLoading('Chargement de tous les comptes...');
+            const response = await fetch('/query/accountAnalytics');
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            hideLoading();
+            document.getElementById('chartSection').style.display = 'none';
+            renderAnalytics(data, true);
+        } catch (error) {
+            hideLoading();
+            showError(`Échec du chargement: ${error.message}`);
+        }
+    }
+
+    async function loadAccountById() {
+        const accountId = document.getElementById('accountIdInput').value.trim();
+
+        if (!accountId) {
+            showError('Veuillez entrer un ID de compte');
+            return;
+        }
+
+        try {
+            stopWatching();
+            showLoading(`Chargement du compte ${accountId}...`);
+            const response = await fetch(`/query/accountAnalytics/${accountId}`);
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            hideLoading();
+            document.getElementById('chartSection').style.display = 'none';
+            renderAnalytics(data, false);
+        } catch (error) {
+            hideLoading();
+            showError(`Échec du chargement: ${error.message}`);
+        }
+    }
+
+    function watchAccount() {
+        const accountId = document.getElementById('accountIdInput').value.trim();
+
+        if (!accountId) {
+            showError('Veuillez entrer un ID de compte à surveiller');
+            return;
+        }
+
+        stopWatching();
+        resetChartData();
+
+        currentWatchingId = accountId;
+        document.getElementById('chartSection').style.display = 'block';
+        document.getElementById('chartTitle').textContent = `Analytics du Compte - ${accountId}`;
+        document.getElementById('liveBadge').innerHTML = '<div class="live-badge"><div class="live-dot"></div>EN DIRECT</div>';
+        document.getElementById('content').innerHTML = '';
+
+        initChart();
+
+        eventSource = new EventSource(`/query/accountAnalytics/${accountId}/watch`);
+
+        document.getElementById('watchBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        updateStatus('connected');
+
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                addDataPoint(data);
+                renderAnalytics(data, false);
+            } catch (error) {
+                console.error('Erreur de parsing SSE:', error);
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('Erreur SSE:', error);
+            showError('Connexion perdue. Tentative de reconnexion...');
+            updateStatus('disconnected');
+        };
+
+        eventSource.onopen = function() {
+            console.log('Connexion SSE ouverte');
+            updateStatus('connected');
+        };
+    }
+
+    function stopWatching() {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+            currentWatchingId = null;
+            document.getElementById('watchBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('liveBadge').innerHTML = '';
+            updateStatus('disconnected');
+        }
+    }
+
+    function updateStatus(status) {
+        const statusIndicator = document.getElementById('statusIndicator');
+        if (status === 'connected') {
+            statusIndicator.innerHTML = '<span class="status connected">🟢 Connecté (Mises à jour en direct)</span>';
+        } else if (status === 'disconnected') {
+            statusIndicator.innerHTML = '<span class="status disconnected">🔴 Déconnecté</span>';
+        } else {
+            statusIndicator.innerHTML = '';
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadAllAccounts();
+    });
+
+    window.addEventListener('beforeunload', () => {
+        stopWatching();
+    });
+</script>
+</body>
+</html>
